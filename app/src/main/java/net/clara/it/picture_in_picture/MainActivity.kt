@@ -1,5 +1,6 @@
 package net.clara.it.picture_in_picture
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.MediaController
 import android.widget.VideoView
@@ -17,6 +18,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import net.clara.it.picture_in_picture.ui.theme.PicturepiTheme
 
 class MainActivity : ComponentActivity() {
+
+    val videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -29,8 +33,8 @@ class MainActivity : ComponentActivity() {
                     AndroidView(
                         factory =  {
                                VideoView(it, null).apply {
-                                   setMediaController(MediaController(this.context))
-                                   setVideoPath("http://commandatastorage.googleapis.com/gtv-videos-bucket/sample/BigBunny.mp4")
+                                   setMediaController(MediaController(it))
+                                   setVideoPath(videoUrl)
                                    start()
                                }
                         },
@@ -43,15 +47,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     PicturepiTheme {
-        Greeting("Android")
+
     }
 }

@@ -5,7 +5,7 @@ La funzionalità Picture in picture (PIP) racchiude un video in un player di pic
 ## Supporto API 
 Questa modalità è stata introdotta a partire da Android 8.0 (API level 26).
 
-## Implementazione**
+## Implementazione
 
 Iniziamo l'implementazione di questa modalità di visualizzazione, in un progetto facente uso del framework Jetpack Compose.
 
