@@ -33,6 +33,65 @@ AndroidView(
             }
     },
     modifier = Modifier.fillMaxSize()
-        .onGloballyPositioned {  }
 )
 ```
+
+## **Step 3 - Implementazione PIP**
+Ora che abbiamo implementato il player, possiamo procedere con l'implementazione della funzionalità picture-in-picture. 
+
+Prima di tutto andiamo a definire un' attributo per sapere se la feature PIP è supportata, questo andrà valorizzato con un valore booleano.
+
+```kotlin
+private val isPipSupported by lazy {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+        packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+    } else false
+}
+```
+
+Poi andiamo a definire un' altro attributo che conterrà un'istanza dell' oggetto *Rect*. Questa istanza ci servirà in seguito per contere il player. 
+
+```kotlin
+private var videoViewBounds = Rect()
+```
+
+Ora tramite modificatore della funzione AndroidView andiamo a definire cosa avviene quando le coordinate cambiano, in questo caso assegnamo le nuove coordinate all' istanza "videoViewBounds".
+
+```kotlin
+modifier = Modifier.fillMaxSize()
+    .onGloballyPositioned { 
+        videoViewBounds = it.boundsInWindow().toAndroidRect()
+    }
+```
+
+Definiamo un metodo che ritorna i parametri per il picture-in-picture tramite builder, come segue:
+```kotlin
+private fun updatePipParams(): PictureInPictureParams? {
+    return if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ){
+        PictureInPictureParams.Builder()
+            .setSourceRectHint(videoViewBounds)
+            .setAspectRatio(Rational(16,9))
+            .build()
+    } else {
+        return null
+    }
+}
+```
+
+In fine definiamo quando entrare nella modalità PIP, ovvero quando l' utente mette l'app in background:
+```kotlin
+override fun onUserLeaveHint() {
+    super.onUserLeaveHint()
+    if (!isPipSupported) return
+
+    updatePipParams().let { params ->
+        if ( params != null )
+            enterPictureInPictureMode(params)
+    }
+}
+```
+
+
+## **Step 4 - Definizione actions in PIP (facoltativo)**
+In caso si voglia definire dei pulsanti a cui assegnare delle funzionalità, come ad esempio il play/pause in caso di un player video, è possibile farlo tramite il metodo *"setActions()"* del PictureInPicture builder. 
+
