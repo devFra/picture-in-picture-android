@@ -95,3 +95,75 @@ override fun onUserLeaveHint() {
 ## **Step 4 - Definizione actions in PIP (facoltativo)**
 In caso si voglia definire dei pulsanti a cui assegnare delle funzionalità, come ad esempio il play/pause in caso di un player video, è possibile farlo tramite il metodo *"setActions()"* del PictureInPicture builder. 
 
+### *Definizione Enum di controllo*
+Come primo step procediamo con la definizione di un enum che usaremo per controllare gli eventi emessi dalle actions definite nel builder del PIP. 
+
+```kotlin
+enum class PlayerEvent(val value: Int) {
+    PLAYER_CONTROL(1), // Define intent
+    PLAYBACK_CONTROL(2), // Define key intent
+    PLAY_PAUSE(3) // Define value intent
+}
+```
+
+
+### *Definizione del broadcast reciever*
+
+```kotlin
+/**
+* Broadcast receiver for handling action items on the pip mode
+*/
+private val broadcastReceiver = object : BroadcastReceiver(){
+    override fun onReceive(p0: Context?, intent: Intent?) {
+        if (intent == null || intent.action != PlayerEvent.PLAYER_CONTROL.value.toString()) {
+            return
+        }
+        when(intent.getIntExtra(PlayerEvent.PLAYBACK_CONTROL.value.toString(), 0)){
+                PlayerEvent.PLAY_PAUSE.value -> {
+                    if ( playerController?.isPlaying!! )
+                        layerController?.pause()
+                    else 
+                        playerController?.start()
+            }
+
+        }
+    }
+}
+```
+
+Estendiamo l'ogetto BroadcastReciever e facendo l'override del metodo *onReceiver* controlliamo la ricezione del nostro intent, in caso positivo definiamo un controllo when per ogni tipo di azione definita. 
+
+In fine andiamo a registrare il BroadcastReciever appena definito nell' onCreate dell' activity:
+
+```kotlin
+registerReceiver(broadcastReceiver, IntentFilter(PlayerEvent.PLAYER_CONTROL.value.toString()))
+```
+
+### *Definizione delle actions*
+Come ultimo step non resta che definire le azioni che vogliamo nella modalità PIP, nel nostro caso definiamo l'azione per metter in pausa o riassumere la riproduzione del video. Tramite la pipe del builder aggiungiamo il metodo *"setActions"* che accetta come parametro una lista di RemoteAction:
+
+```kotlin
+PictureInPictureParams.Builder()
+    .setSourceRectHint(videoViewBounds)
+    .setAspectRatio(Rational(16,9))
+    .setActions(listOf( // <---
+        RemoteAction(
+            Icon.createWithResource(applicationContext, R.drawable.ic_pause),
+            "pause", // title 
+            "pause playback", // contentDescription
+            PendingIntent.getBroadcast(
+                applicationContext,
+                0,
+                Intent(PlayerEvent.PLAYER_CONTROL.value.toString()).putExtra(PlayerEvent.PLAYBACK_CONTROL.value.toString(), PlayerEvent.PLAY_PAUSE.value),
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        )
+    ))
+    .build()
+```
+con quest'ultimo step abbiamo terminito l'implemntazione della modalità PIP con dei controlli custom. 
+
+
+Grazie  😉 
+
+[Francesco Mariani](francesco.mariani@it.clara.net)

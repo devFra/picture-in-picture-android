@@ -6,10 +6,10 @@ import android.app.RemoteAction
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -21,7 +21,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toAndroidRect
@@ -31,15 +30,38 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import net.clara.it.picture_in_picture.ui.theme.PicturepiTheme
 
+
+enum class PlayerEvent(val value: Int) {
+    PLAYER_CONTROL(1), // Define intent
+    PLAYBACK_CONTROL(2), // Define key intent
+    PLAY_PAUSE(3) // Define value intent
+}
+
 class MainActivity : ComponentActivity() {
 
-    val videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    private val videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
 
-    class MyReciever: BroadcastReceiver(){
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            Log.i("BroadcastReceiver", "test")
+    /**
+     * Broadcast receiver for handling action items on the pip mode
+     */
+    private val broadcastReceiver = object : BroadcastReceiver(){
+        override fun onReceive(p0: Context?, intent: Intent?) {
+            if (intent == null || intent.action != PlayerEvent.PLAYER_CONTROL.value.toString()) {
+                return
+            }
+            when(intent.getIntExtra(PlayerEvent.PLAYBACK_CONTROL.value.toString(), 0)){
+                 PlayerEvent.PLAY_PAUSE.value -> {
+                     if ( playerController?.isPlaying!! )
+                         layerController?.pause()
+                     else
+                         playerController?.start()
+                }
+
+            }
         }
     }
+
+    private var playerController: VideoView? = null
 
 
     private val isPipSupported by lazy {
@@ -52,6 +74,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        registerReceiver(broadcastReceiver, IntentFilter(PlayerEvent.PLAYER_CONTROL.value.toString()))
+
         setContent {
             PicturepiTheme {
                 // A surface container using the 'background' color from the theme
@@ -65,6 +90,7 @@ class MainActivity : ComponentActivity() {
                                    setMediaController(MediaController(it))
                                    setVideoPath(videoUrl)
                                    start()
+                                   playerController = this
                                }
                         },
                         modifier = Modifier.fillMaxSize()
@@ -76,6 +102,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 
     private fun updatePipParams(): PictureInPictureParams? {
         return if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ){
@@ -90,7 +117,7 @@ class MainActivity : ComponentActivity() {
                         PendingIntent.getBroadcast(
                             applicationContext,
                             0,
-                            Intent(applicationContext,MyReciever::class.java),
+                            Intent(PlayerEvent.PLAYER_CONTROL.value.toString()).putExtra(PlayerEvent.PLAYBACK_CONTROL.value.toString(), PlayerEvent.PLAY_PAUSE.value),
                             PendingIntent.FLAG_IMMUTABLE
                         )
                     )
